@@ -56,7 +56,7 @@ const HomePage = () => {
   const [products, setProducts] = useState<ProductType[]>([]);
   const [totalPages, setTotalPages] = useState(1);
   const [searchParams] = useSearchParams();
-  const phoneType = searchParams.get('phone_type');
+  const phoneType = searchParams.get('phone_type') || '';
   const page = searchParams.get('page') || "1";
 
   const navigate = useNavigate();
@@ -107,7 +107,7 @@ const HomePage = () => {
           <Pagination>
             <PaginationContent>
               <PaginationItem>
-                <PaginationPrevious className={`${parseInt(page) <= 1 ? 'hidden' : ''}`} href={`${new URLSearchParams({ page: String(parseInt(page) - 1), phone_type: String(phoneType) })}`} />
+                <PaginationPrevious className={`${parseInt(page) <= 1 ? 'hidden' : ''}`} href={`?${new URLSearchParams({ page: String(parseInt(page) - 1), phone_type: phoneType })}`} />
               </PaginationItem>
               {
                 [-3, -2, -1, 0, 1, 2, 3].map((e) => {
@@ -115,7 +115,7 @@ const HomePage = () => {
                   if (curPage + e < 1 || curPage + e > totalPages)
                     return;
                   return (
-                    <PaginationItem key={e}>
+                    <PaginationItem key={e} className={`${e === 0 ? 'text-main' : ''}`}>
                       <PaginationLink href={`?${new URLSearchParams({ page: String(parseInt(page) + e), phone_type: String(phoneType) })}`}>{parseInt(page) + e}</PaginationLink>
                     </PaginationItem>
                   )
@@ -125,7 +125,7 @@ const HomePage = () => {
                 <PaginationEllipsis />
               </PaginationItem>
               <PaginationItem>
-                <PaginationNext className={`${parseInt(page) >= totalPages ? 'hidden' : ''}`} href={`${new URLSearchParams({ page: String(parseInt(page) + 1), phone_type: String(phoneType) })}`} />
+                <PaginationNext className={`${parseInt(page) >= totalPages ? 'hidden' : ''}`} href={`?${new URLSearchParams({ page: String(parseInt(page) + 1), phone_type: String(phoneType) })}`} />
               </PaginationItem>
             </PaginationContent>
           </Pagination>

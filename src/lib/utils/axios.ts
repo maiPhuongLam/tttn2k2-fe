@@ -9,7 +9,7 @@ import axios, {
 
 import { appConfigs } from '../app-config';
 
-import { getRefreshToken, getToken, removeTokens, setToken } from './auth';
+import { getRefreshToken, getToken, removeTokens, setTokens } from './auth';
 import { refresh } from '@/services/auth';
 
 const instance = axios.create({
@@ -50,9 +50,9 @@ const responseAuthErrorInterceptor = async (error: AxiosError) => {
       try {
         const refreshResponse = await refresh(refreshToken);
 
-        const { accessToken } = refreshResponse.data.data;
-        if (accessToken) {
-          setToken(accessToken);
+        const { access_token: _accessToken, refresh_token: _refreshToken } = refreshResponse.data.data;
+        if (_accessToken && _refreshToken) {
+          setTokens(_accessToken, _refreshToken);
 
           // Prevent infinite loop on the resumed request
           (config as any)._unretryable = true;
@@ -60,7 +60,7 @@ const responseAuthErrorInterceptor = async (error: AxiosError) => {
         }
       } catch (refreshError) {
         removeTokens();
-        // window.location.href = '/auth/login';
+        window.location.href = '/auth/login';
         return Promise.reject(refreshError);
       }
     }

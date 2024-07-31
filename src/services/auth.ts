@@ -9,9 +9,9 @@ export const login = async (body: { email: string, password: string }): Promise<
 export const getCurrentUser = async (): Promise<AxiosResponse> => request.get(`/auth/me`);
 
 export const refresh = async (refreshToken: string): Promise<AxiosResponse> =>
-  request.post(`/auth/refresh-token`, {
-    refreshToken,
-  }, {
+  request.get(`/auth/refresh-token`, {
+    params: { refresh_token: refreshToken },
+
     // Disable retry on token refreshing request
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore

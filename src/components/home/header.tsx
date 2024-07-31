@@ -18,7 +18,7 @@ const headerListItem = [
   {
     logo: phoneLogo,
     name: 'Gọi mua hàng',
-    href: '/phone'
+    href: '#'
   },
   {
     logo: cartLogo,
@@ -44,21 +44,32 @@ export const HomeHeader = () => {
               <HeaderItem key={item.href} logo={item.logo} name={item.name} href={item.href} />
             ))
           }
-          <DropdownMenu key='/auth/login'>
-            <DropdownMenuTrigger className="border-none outline-none ring-0">
+          {
+            user ? (
+              <DropdownMenu key='/auth/login'>
+                <DropdownMenuTrigger className="border-none outline-none ring-0">
+                  <HeaderItem
+                    logo={profileLogo}
+                    name={`${user ? user.name : 'Đăng nhập'}`}
+                    href={`${user ? '#' : '/auth/login'}`}
+                  />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuLabel>Tài khoản của tôi</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => { navigate('/payment/history') }}>Lịch sử thanh toán</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => { reset(); navigate('/auth/login'); }} className="text-destructive">Logout</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
               <HeaderItem
+                key={'/auth/login'}
                 logo={profileLogo}
-                name={`${user ? user.name : 'Đăng nhập'}`}
-                href={`${user ? '#' : '/auth/login'}`}
+                name='Đăng nhập'
+                href='/auth/login'
               />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuLabel>My Account</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem>Profile</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => { reset(); navigate('/auth/login'); }} className="text-destructive">Logout</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+            )
+          }
         </div>
       </div>
     </header>

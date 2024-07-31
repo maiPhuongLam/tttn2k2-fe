@@ -22,7 +22,7 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <AppRouter />
-          <ToastContainer/>
+          <ToastContainer autoClose={2000}/>
         </AuthProvider>
       </QueryClientProvider>
     </Suspense>

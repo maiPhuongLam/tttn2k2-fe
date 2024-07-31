@@ -6,6 +6,8 @@ import AuthGuard from '@/components/auth/guard';
 import HomePage from '@/pages/home';
 import MobilesPage from '@/pages/mobiles';
 import DetailProduct from '@/pages/detail-product';
+import CartPage from '@/pages/cart';
+import PaymentRoutes from './payment';
 
 const Interrupts = lazy(() => import('../pages/error/interrupts'));
 const Forbidden = lazy(() => import('../pages/error/forbidden'));
@@ -16,15 +18,18 @@ const AppRouter = () => {
     <BrowserRouter>
       <Routes>
         <Route index path="/" element={<HomePage />} />
-        <Route path="/mobiles/:id" element={<MobilesPage />} />
-        <Route path="/mobile/:id" element={<DetailProduct />} />
+        <Route path="/mobiles/:productId" element={<MobilesPage />} />
+        <Route path="/mobile/:productId/:itemId" element={<DetailProduct />} />
+        <Route path="/cart" element={<CartPage />} />
+
+        <Route path="payment/*" element={<PaymentRoutes />} />
 
         <Route element={<AuthLayout />}>
           <Route path="auth/*" element={<AuthRoutes />} />
         </Route>
 
         <Route element={<AuthGuard />}>
-      </Route>
+        </Route>
 
         <Route path="interrupts" element={<Interrupts />} />
         <Route path="forbidden" element={<Forbidden />} />

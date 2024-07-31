@@ -5,23 +5,101 @@ import cartLogo from '@/assets/svgs/cart.svg';
 import flashLogo from '@/assets/svgs/flash.svg';
 import { TagIcon } from "lucide-react";
 import { useEffect, useState } from "react";
-
-const product = {
-  name: 'Redmi 12 5G',
-  image: 'https://rukminim2.flixcart.com/image/312/312/xif0q/mobile/b/m/g/-original-imagxaqtqng2hpxn.jpeg?q=70',
-  color: 'Jade Black',
-  rom: 128,
-  description: '6 GB RAM | 128 GB ROM | Expandable Upto 1 TB',
-  screen: '17.25 cm (6.79 inch) Full HD+ Display',
-  camera: '50MP + 2MP | 8MP Front Camera',
-  battery: '5000 mAh Battery',
-  chip: 'Snapdragon 4 Gen 2 Processor',
-  warranty: '1 Year Manufacturer Warranty for Phone and 6 Months Warranty for In the Box Accessories',
-  price: 12.499
-}
+import { useNavigate, useParams } from "react-router-dom";
+import { ProductItem } from "../mobiles";
+import { getProductItems } from "@/services/product";
+import { formatMoneyVND } from "@/lib/utils/price";
+import { addItemToCart, getMyCart } from "@/services/cart";
+import { toast } from "react-toastify";
+import { HttpStatusCode } from "axios";
 
 const DetailProduct = () => {
+  const { productId, itemId } = useParams();
+  const navigate = useNavigate();
+
+  const [cartId, setCartId] = useState<number>();
+
+  const [product, setProduct] = useState<ProductItem>();
+  const [products, setProducts] = useState<ProductItem[]>([]);
   const [isScrolled, setIsScrolled] = useState(false);
+
+  //FILTER
+  const [colors, setColors] = useState<string[]>([]);
+  const [storages, setStorages] = useState<string[]>([]);
+  const [rams, setRams] = useState<string[]>([]);
+
+  const handleChooseProductItem = ({ type, value }: { type: string, value: string }) => {
+    const filters = {
+      color: product?.color,
+      storage: product?.storage,
+      ram: product?.ram,
+      [type]: value
+    };
+
+    const newProductItem = products.find(p => p.color === filters.color && p.storage === filters.storage && p.ram === filters.ram);
+    if(newProductItem?.productId && newProductItem.itemId) {
+      navigate(`/mobile/${newProductItem?.productId}/${newProductItem?.itemId}`);
+    }
+  }
+
+  const handleAddItemToCart = async () => {
+    if(cartId === undefined) {
+      toast.error('Xin vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng');
+      return;
+    }
+
+    if(product) {
+      const rs = await addItemToCart({
+        price: product.price.toString(),
+        cartId,
+        productItemId: product.itemId,
+        quantity: 1
+      })
+
+      if(rs.status === HttpStatusCode.Ok) {
+        toast.success('Thêm sản phẩm vào giỏ hàng thành công');
+      }
+    }
+  }
+
+  useEffect(() => {
+    const handleGetCart = async () => {
+      const rsp = await getMyCart();
+
+      setCartId(rsp.data.data.cartId);
+    }
+
+    handleGetCart();
+  }, [])
+
+  useEffect(() => {
+    const handleGetProductItems = async () => {
+      if (productId && itemId) {
+        const rsp = await getProductItems(productId);
+        const item = rsp.data.data.find((e: any) => e.itemId === parseInt(itemId));
+        if (item) {
+          setProduct(item);
+        }
+        
+        setProducts(rsp.data.data);
+
+        const mColors = new Set<string>();
+        const mStorages = new Set<string>();
+        const mRams = new Set<string>();
+        rsp.data.data.forEach((e: any) => {
+          mColors.add(JSON.stringify({ color: e.color, image: e.image }));
+          mStorages.add(e.storage as string);
+          mRams.add(e.ram as string);
+        })
+
+        setColors(Array.from(mColors));
+        setStorages(Array.from(mStorages));
+        setRams(Array.from(mRams));
+      }
+    }
+
+    handleGetProductItems();
+  }, [productId, itemId])
 
   useEffect(() => {
     const handleScroll = () => {
@@ -45,14 +123,14 @@ const DetailProduct = () => {
       <div className="container pt-[80px]">
         <div className="grid grid-cols-5 gap-6">
           <div className="col-span-2">
-            <div className="block flex-none grid-cols-none grid-rows-none overflow-visible h-[1000px]">
+            <div className="block flex-none grid-cols-none grid-rows-none overflow-visible">
               <div className={`sticky top-4 bottom-0 z-[2] transition-all ${isScrolled ? 'pt-[60px]' : ''}`}>
                 <div className="flex flex-col gap-4">
                   <div className="flex justify-center items-center w-full p-4 border-[1px] rounded-md">
-                    <img className="w-[200px] h-auto" src={product.image} />
+                    <img className="w-[200px] h-auto" src={product?.image} />
                   </div>
                   <div className="flex items-center justify-between gap-2">
-                    <Button className="bg-yellow-500 w-[46%] hover:bg-yellow-400 flex gap-2 items-center">
+                    <Button onClick={handleAddItemToCart} className="bg-yellow-500 w-[46%] hover:bg-yellow-400 flex gap-2 items-center">
                       <img className="w-[26px]" src={cartLogo} />
                       THÊM VÀO GIỎ HÀNG
                     </Button>
@@ -67,66 +145,65 @@ const DetailProduct = () => {
           </div>
           <div className="col-span-3 pb-12">
             <div className="text-lg font-medium mb-2">
-              {product.name + ' (' + product.color + ', ' + product.rom + ' GB)'}
+              {product?.name + ' (' + product?.color + ', ' + product?.storage + ')'}
             </div>
 
-            <span className="font-semibold text-3xl">${product.price}</span>
+            <span className="font-semibold text-3xl">{formatMoneyVND(product?.price || 0)}</span>
 
             <div className="flex flex-col gap-2 mt-6">
-              <span className="font-bold">Available offers</span>
+              <span className="font-bold">Ưu đãi có sẵn</span>
               <div className="flex items-center gap-2 text-sm">
                 <TagIcon color="green" size={18} />
-                <span className="font-semibold">Bank offer</span>
-                <p>5% Cashback on MPL Axis Bank Card</p>
+                <span className="font-semibold">Ưu đãi từ ngân hàng</span>
+                <p>Hoàn tiền 5% trên thẻ MPL Bank</p>
               </div>
               <div className="flex items-center gap-2 text-sm">
                 <TagIcon color="green" size={18} />
-                <span className="font-semibold">Special Price</span>
-                <p>Get extra $100 off (price inclusive of cashback/coupon)</p>
+                <span className="font-semibold">Giá đặc biệt</span>
+                <p>Nhận thêm 50.000đ giảm giá (giá đã bao gồm hoàn tiền/phiếu giảm giá)</p>
               </div>
               <div className="flex items-center gap-2 text-sm">
                 <TagIcon color="green" size={18} />
-                <span className="font-semibold">Freebie</span>
-                <p>Flat $100 off on Cleartrip hotels booking along with 300 supercoins on booking</p>
+                <span className="font-semibold">Quà tặng</span>
+                <p>Giảm ngay 100.000đ khi đặt phòng khách sạn qua MPLtrip</p>
               </div>
             </div>
 
             <div className="flex flex-col gap-4 mt-12">
               <div className="flex items-center gap-4">
                 <div className="w-[60px] mr-2">
-                  <img className="w-[40px]" src='https://rukminim2.flixcart.com/image/160/160/prod-fk-cms-brand-images/d0d3c5ff7637bf920698714cd1ef98ab6b9044248c18406786f1e516a12bcb66.jpg?q=90' />
+                  {/* <img className="w-[40px]" src='https://rukminim2.flixcart.com/image/160/160/prod-fk-cms-brand-images/d0d3c5ff7637bf920698714cd1ef98ab6b9044248c18406786f1e516a12bcb66.jpg?q=90' /> */}
                 </div>
-                <div className="">
-                  {product.warranty}
-                </div>
-              </div>
-              <div className="flex items-center gap-4">
-                <div className="w-[60px] mr-2">
-                  <p>Color</p>
-                </div>
-                <div className="flex items-center gap-4">
-                  <div className="px-4 py-1 border-2 rounded-sm border-blue-500">
-                    <img className="w-[30px]" src={product.image} />
-                  </div>
-                  <div className="px-4 py-1 border-2 rounded-sm">
-                    <img className="w-[30px]" src={product.image} />
-                  </div>
-                  <div className="px-4 py-1 border-2 rounded-sm">
-                    <img className="w-[30px]" src={product.image} />
-                  </div>
+                <div className="text-gray-700">
+                  {'Bảo hành 1 năm của nhà sản xuất cho điện thoại và 6 tháng cho các phụ kiện đi kèm'}
                 </div>
               </div>
               <div className="flex items-center gap-4">
                 <div className="w-[60px] mr-2">
-                  <p>Storage</p>
+                  <p>Màu sắc</p>
                 </div>
                 <div className="flex items-center gap-4">
-                  <div className="px-4 py-1 font-medium border-2 rounded-sm border-blue-500">
-                    {product.rom + ' GB'}
-                  </div>
-                  <div className="px-4 py-1 font-medium border-2 rounded-sm">
-                    {product.rom + ' GB'}
-                  </div>
+                  {
+                    colors.map(color => (
+                      <div key={color} onClick={() => handleChooseProductItem({ type: 'color', value: JSON.parse(color).color })} className={`cursor-pointer px-4 py-1 border-2 rounded-sm ${product?.color === JSON.parse(color).color ? ' border-blue-500' : ''}`}>
+                        <img className="w-[30px]" src={JSON.parse(color).image} />
+                      </div>
+                    ))
+                  }
+                </div>
+              </div>
+              <div className="flex items-center gap-4">
+                <div className="w-[60px] mr-2">
+                  <p>Bộ nhớ</p>
+                </div>
+                <div className="flex items-center gap-4">
+                  {
+                    storages.map(storage => (
+                      <div key={storage} onClick={() => handleChooseProductItem({ type: 'storage', value: storage })} className={`cursor-pointer px-4 py-1 font-medium border-2 rounded-sm ${product?.storage === storage ? ' border-blue-500' : ''}`}>
+                        {storage}
+                      </div>
+                    ))
+                  }
                 </div>
               </div>
               <div className="flex items-center gap-4">
@@ -134,15 +211,13 @@ const DetailProduct = () => {
                   <p>RAM</p>
                 </div>
                 <div className="flex items-center gap-4">
-                  <div className="px-4 py-1 font-medium border-2 rounded-sm border-blue-500">
-                    {4 + ' GB'}
-                  </div>
-                  <div className="px-4 py-1 font-medium border-2 rounded-sm">
-                    {6 + ' GB'}
-                  </div>
-                  <div className="px-4 py-1 font-medium border-2 rounded-sm">
-                    {8 + ' GB'}
-                  </div>
+                  {
+                    rams.map(ram => (
+                      <div key={ram} onClick={() => handleChooseProductItem({ type: 'ram', value: ram })} className={`cursor-pointer px-4 py-1 font-medium border-2 rounded-sm ${product?.ram === ram ? ' border-blue-500' : ''}`}>
+                        {ram}
+                      </div>
+                    ))
+                  }
                 </div>
               </div>
             </div>
