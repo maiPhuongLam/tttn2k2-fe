@@ -12,6 +12,7 @@ import { formatMoneyVND } from "@/lib/utils/price";
 import { addItemToCart, getMyCart } from "@/services/cart";
 import { toast } from "react-toastify";
 import { HttpStatusCode } from "axios";
+import { orderCheckout } from "@/services/order";
 
 const DetailProduct = () => {
   const { productId, itemId } = useParams();
@@ -58,6 +59,30 @@ const DetailProduct = () => {
 
       if(rs.status === HttpStatusCode.Ok) {
         toast.success('Thêm sản phẩm vào giỏ hàng thành công');
+      }
+    }
+  }
+
+  const handleBuyNow = async () => {
+    if(cartId === undefined) {
+      toast.error('Xin vui lòng đăng nhập mua sản phẩm');
+      return;
+    }
+
+    if(product) {
+      const rs = await orderCheckout({
+        productItems: [{
+          image: product.image,
+          name: product.name,
+          price: product.price.toString(),
+          productItemId: 0,
+          quantity: 1,
+          SKU: product.sku
+        }]
+      });
+
+      if(rs.data.data) {
+        window.open(rs.data.data, '_blank');
       }
     }
   }
@@ -134,7 +159,7 @@ const DetailProduct = () => {
                       <img className="w-[26px]" src={cartLogo} />
                       THÊM VÀO GIỎ HÀNG
                     </Button>
-                    <Button className="bg-orange-500 w-[46%] hover:bg-orange-400 flex gap-2 items-center">
+                    <Button onClick={handleBuyNow} className="bg-orange-500 w-[46%] hover:bg-orange-400 flex gap-2 items-center">
                       <img className="w-[26px]" src={flashLogo} />
                       MUA NGAY
                     </Button>

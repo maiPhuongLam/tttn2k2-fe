@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { useAuth } from "@/context/auth/auth-context";
 import { formatMoneyVND } from "@/lib/utils/price";
 import { addItemToCart, getMyCart, removeItemFromCart } from "@/services/cart";
+import { orderCheckout } from "@/services/order";
 import { HttpStatusCode } from "axios";
 import { Minus, MoveLeft, Plus, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -12,7 +13,7 @@ import { toast } from "react-toastify";
 
 type CartItem = {
   id: number,
-  isChoose: boolean,
+  isSelect: boolean,
   cartId: number,
   productItemId: number,
   quantity: number,
@@ -53,13 +54,39 @@ const CartPage = () => {
   const handleGetCart = async () => {
     const rsp = await getMyCart();
 
-    setCartItems(rsp.data.data.items);
+    setCartItems(rsp.data.data.items.map((item: CartItem) => ({ ...item, isSelect: false })));
     setCartId(rsp.data.data.cartId);
+  }
 
-    const total = rsp.data.data.items.reduce((acc: number, cur: CartItem) => {
-      return acc + parseInt(cur.price);
-    }, 0);
-    setTotalPrice(total);
+  const handleCheckout = async () => {
+    if (cartId === undefined) {
+      toast.error('Xin vui lòng đăng nhập mua sản phẩm');
+      return;
+    }
+
+    const rs = await orderCheckout({
+      cartId: cartId,
+      productItems: cartItems.filter(cartItem => cartItem.isSelect).map(cartItem => {
+        return {
+          name: cartItem.productItem.name,
+          image: cartItem.productItem.image,
+          SKU: cartItem.productItem.SKU,
+          quantity: cartItem.quantity,
+          productItemId: cartItem.productItemId,
+          price: cartItem.productItem.price
+        }
+      })
+    });
+
+    if (rs.data.data) {
+      window.open(rs.data.data, "_self");
+    }
+  }
+
+  const handleSelectAll = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const checked = event.target.checked;
+    setCartItems(prev => prev.map(e => ({ ...e, isSelect: checked })));
+    setIsSelectAll(checked);
   }
 
   useEffect(() => {
@@ -67,7 +94,16 @@ const CartPage = () => {
   }, [])
 
   useEffect(() => {
-    if(!isAuthenticated) {
+    const selectAll = cartItems.every(e => e.isSelect === true);
+    setIsSelectAll(selectAll);
+    const total = cartItems.filter(e => e.isSelect).reduce((acc: number, cur: CartItem) => {
+      return acc + parseInt(cur.price);
+    }, 0);
+    setTotalPrice(total);
+  }, [cartItems])
+
+  useEffect(() => {
+    if (!isAuthenticated) {
       toast.error('Xin vui lòng đăng nhập');
       return;
     }
@@ -97,7 +133,7 @@ const CartPage = () => {
               <div className="flex flex-col gap-4 items-center w-full pt-8">
                 <div className="flex w-full justify-between items-center border-b-[1px]">
                   <div className="flex justify-center items-center gap-2">
-                    <Input onChange={(e) => setIsSelectAll(e.target.checked)} className="w-[14px] accent-main cursor-pointer" type="checkbox" />
+                    <Input checked={isSelectAll} onChange={handleSelectAll} className="w-[14px] accent-main cursor-pointer" type="checkbox" />
                     <span>{isSelectAll ? 'Bỏ chọn tất cả' : 'Chọn tất cả'}</span>
                   </div>
                   <div className="italic text-gray-600 text-sm cursor-pointer">
@@ -107,14 +143,14 @@ const CartPage = () => {
                 <div className="flex flex-col gap-8 w-full pb-[120px]">
                   {
                     cartItems.map(cartItem => (
-                      <CartItem cartId={cartId!} cartItem={cartItem} handleGetCart={handleGetCart} key={cartItem.id} />
+                      <CartItem setCartItems={setCartItems} cartId={cartId!} cartItem={cartItem} handleGetCart={handleGetCart} key={cartItem.id} />
                     ))
                   }
                 </div>
               </div>
               <div className="fixed flex justify-between items-center w-[650px] h-[100px] bottom-0 bg-white z-10">
                 <div className="text-lg">Tạm tính: <span className="text-main font-semibold">{formatMoneyVND(totalPrice)}</span></div>
-                <Button className="bg-main hover:bg-main hover:opacity-85 ">Mua ngay</Button>
+                <Button onClick={handleCheckout} className="bg-main hover:bg-main hover:opacity-85 ">Mua ngay</Button>
               </div>
             </>
           )
@@ -124,7 +160,17 @@ const CartPage = () => {
   )
 }
 
-const CartItem = ({ cartId, cartItem, handleGetCart }: { cartId: number, cartItem: CartItem, handleGetCart: () => void }) => {
+const CartItem = ({
+  cartId,
+  cartItem,
+  setCartItems,
+  handleGetCart
+}: {
+  cartId: number,
+  cartItem: CartItem,
+  setCartItems: React.Dispatch<React.SetStateAction<CartItem[]>>,
+  handleGetCart: () => void
+}) => {
   const handlePlusOrMinusItemInCart = async (isPlus: boolean = true) => {
     const rs = await addItemToCart({
       price: isPlus ? cartItem.productItem.price : (parseInt(cartItem.productItem.price) * -1).toString(),
@@ -152,9 +198,21 @@ const CartItem = ({ cartId, cartItem, handleGetCart }: { cartId: number, cartIte
     handleGetCart();
   }
 
+  const handleSelectItem = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setCartItems(prev => {
+      const newItems = prev.map(e => {
+        if (e.id === cartItem.id) {
+          return { ...e, isSelect: event.target.checked }
+        }
+        return e;
+      })
+      return newItems;
+    })
+  }
+
   return (
     <div className="flex gap-4 pb-2 border-b-[1px]">
-      <Input className="w-[14px] accent-main" type='checkbox' />
+      <Input checked={cartItem.isSelect} onChange={(e) => handleSelectItem(e)} className="w-[14px] accent-main" type='checkbox' />
       <div className="w-[100px] h-[100px] overflow-hidden">
         <img src={cartItem.productItem.image} className="w-[100px] h-[100px] object-contain object-center" />
       </div>

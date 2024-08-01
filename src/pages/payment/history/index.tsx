@@ -1,8 +1,20 @@
 import { HomeFooter } from "@/components/home/footer";
 import { HomeHeader } from "@/components/home/header";
 import { formatMoneyVND } from "@/lib/utils/price";
+import { orderHistory } from "@/services/order";
+import { useEffect } from "react";
 
 const HistoryPaymentPage = () => {
+  
+
+  useEffect(() => {
+    const handleOrderHistory = async () => {
+      const rs = await orderHistory();
+      console.log(rs.data);
+    }
+
+    handleOrderHistory()
+  }, [])
   return (
     <>
       <HomeHeader />
