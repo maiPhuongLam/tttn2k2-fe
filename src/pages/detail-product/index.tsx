@@ -17,7 +17,6 @@ import { orderCheckout } from "@/services/order";
 const DetailProduct = () => {
   const { productId, itemId } = useParams();
   const navigate = useNavigate();
-
   const [cartId, setCartId] = useState<number>();
 
   const [product, setProduct] = useState<ProductItem>();

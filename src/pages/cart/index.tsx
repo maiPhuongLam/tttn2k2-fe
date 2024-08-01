@@ -63,7 +63,7 @@ const CartPage = () => {
       toast.error('Xin vui lòng đăng nhập mua sản phẩm');
       return;
     }
-
+    
     const rs = await orderCheckout({
       cartId: cartId,
       productItems: cartItems.filter(cartItem => cartItem.isSelect).map(cartItem => {
@@ -173,10 +173,10 @@ const CartItem = ({
 }) => {
   const handlePlusOrMinusItemInCart = async (isPlus: boolean = true) => {
     const rs = await addItemToCart({
-      price: isPlus ? cartItem.productItem.price : (parseInt(cartItem.productItem.price) * -1).toString(),
+      price: isPlus ? ((cartItem.quantity + 1) * parseInt(cartItem.productItem.price)).toString() : ((cartItem.quantity - 1) * parseInt(cartItem.productItem.price)).toString(),
       cartId: cartId,
       productItemId: cartItem.productItemId,
-      quantity: isPlus ? 1 : -1
+      quantity: isPlus ? cartItem.quantity + 1 : cartItem.quantity - 1
     })
 
     if (rs.status !== HttpStatusCode.Ok) {
